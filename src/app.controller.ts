@@ -6,4 +6,9 @@ export class AppController {
   index() {
     return "hell3o";
   }
+
+  @Get("info")
+  info() {
+    return "info";
+  }
 }

@@ -43,7 +43,14 @@ export class NestApplication {
         this.app[httpMethod.toLowerCase()](
           routePath,
           (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
-            const result = method.call(controller);
+            const args = this.resolveParams(
+              Reflect.getPrototypeOf(controller),
+              methodName,
+              req,
+              res,
+              next
+            );
+            const result = method.call(controller, ...args);
             res.send(result);
             Logger.log(
               `Mapped {${routePath}, ${method}} route`,
@@ -54,6 +61,30 @@ export class NestApplication {
       }
       Logger.log("Nest application successfully started", "NestApplication");
     }
+  }
+
+  private resolveParams(
+    instance: any,
+    methodName: string,
+    req: ExpressRequest,
+    res: ExpressResponse,
+    next: NextFunction
+  ) {
+    const paramsMetaData = Reflect.getMetadata(`params`, instance, methodName);
+    return paramsMetaData
+      .sort((a, b) => {
+        return a.parameterIndex - b.parameterIndex;
+      })
+      .map((paramMetaData) => {
+        const { key } = paramMetaData;
+        switch (key) {
+          case "Request":
+          case "Req":
+            return req;
+          default:
+            return null;
+        }
+      });
   }
 
   async listen(port: number) {
