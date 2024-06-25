@@ -11,7 +11,23 @@ import path from "path";
 
 export class NestApplication {
   private readonly app: Express = express();
-  constructor(protected readonly module) {}
+  constructor(protected readonly module) {
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
+  }
+
+  private getResponseMetadata(controller: Function, methodName: string) {
+    const paramMetadata = Reflect.getMetadata("params", controller, methodName);
+    console.log("paramMetadata: ", paramMetadata);
+    return paramMetadata
+      .filter(Boolean)
+      .find(
+        (param) =>
+          param.key === "Res" ||
+          param.key === "Response" ||
+          param.key === "Next"
+      );
+  }
 
   //   初始化工作
   async init() {
@@ -37,6 +53,11 @@ export class NestApplication {
         const method = controllerPrototype[methodName];
         const httpMethod = Reflect.getMetadata("method", method);
         const pathMetadata = Reflect.getMetadata("path", method);
+        const redirectUrl = Reflect.getMetadata("redirectUrl", method);
+        const redirectStatusCode = Reflect.getMetadata(
+          "redirectStatusCode",
+          method
+        );
         if (!httpMethod) continue;
 
         const routePath = path.posix.join("/", prefix, pathMetadata);
@@ -51,7 +72,25 @@ export class NestApplication {
               next
             );
             const result = method.call(controller, ...args);
-            res.send(result);
+            if (result?.url) {
+              res.redirect(result?.statusCode || 302, result.url);
+              return;
+            }
+            if (redirectUrl) {
+              res.redirect(redirectStatusCode || 302, redirectUrl);
+              return;
+            }
+
+            // 判断controller的methodName方法里有没有使用Response或Res参数装饰器，如果用了
+            // 任何一个则不发送响应
+            const responseMetadata = this.getResponseMetadata(
+              controller,
+              methodName
+            );
+            console.log("-----responseMetadata----", responseMetadata);
+            if (!responseMetadata || responseMetadata?.data?.passthrough) {
+              res.send(result);
+            }
             Logger.log(
               `Mapped {${routePath}, ${method}} route`,
               "RoutesResolver"
@@ -70,21 +109,40 @@ export class NestApplication {
     res: ExpressResponse,
     next: NextFunction
   ) {
-    const paramsMetaData = Reflect.getMetadata(`params`, instance, methodName);
-    return paramsMetaData
-      .sort((a, b) => {
-        return a.parameterIndex - b.parameterIndex;
-      })
-      .map((paramMetaData) => {
-        const { key } = paramMetaData;
-        switch (key) {
-          case "Request":
-          case "Req":
-            return req;
-          default:
-            return null;
-        }
-      });
+    const paramsMetaData =
+      Reflect.getMetadata(`params`, instance, methodName) ?? [];
+    console.log(paramsMetaData, "pam");
+    return paramsMetaData.map((paramMetaData) => {
+      const { key, data } = paramMetaData;
+      switch (key) {
+        case "Request":
+        case "Req":
+          return req;
+        case "Response":
+        case "Res":
+          return res;
+        case "Query":
+          return data ? req.query[data] : req.query;
+        case "Headers":
+          return data ? req.headers[data] : req.headers;
+        case "Session":
+          return data ? req.session[data] : req.session;
+        case "Ip":
+          return req.ip;
+        case "Param":
+          return data ? req.params[data] : req.params;
+        case "Body":
+          return data ? req.body[data] : req.body;
+        case "Next":
+          return next;
+        default:
+          return null;
+      }
+    });
+  }
+
+  use(middleware) {
+    this.app.use(middleware);
   }
 
   async listen(port: number) {

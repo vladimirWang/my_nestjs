@@ -1,0 +1,55 @@
+@host=http://localhost:3000
+
+### query
+{{host}}/query?id=12
+
+### query without id
+{{host}}/query
+
+### headers
+{{host}}/headers
+
+### session
+{{host}}/session
+
+### ip
+{{host}}/ip
+
+### user/1
+{{host}}/zhangsan/info/12
+
+### user/1
+{{host}}/zhangsan/info/12
+
+
+### star/ab00de
+{{host}}/star/ab00de
+
+### create
+POST {{host}}/create
+Content-Type: application/json
+
+{
+    "username": "john"
+}
+
+### create
+POST {{host}}/create2
+Content-Type: application/json
+
+{
+    "username": "john"
+}
+
+### passthrough
+GET {{host}}/passthrough
+
+### middleware
+GET {{host}}/next
+
+### redirect
+GET {{host}}/redirect
+
+
+### redirect2
+GET {{host}}/redirect2?version=2

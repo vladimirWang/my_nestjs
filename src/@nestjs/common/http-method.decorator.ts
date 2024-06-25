@@ -12,3 +12,32 @@ export function Get(path: string = ""): MethodDecorator {
     Reflect.defineMetadata("method", "GET", descriptor.value);
   };
 }
+
+export function Post(path: string = ""): MethodDecorator {
+  /**
+   * target类原型 AppController.prototype
+   * propertyKey: 方法名 index
+   * descriptor: index方法的属性描述器
+   */
+
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata("path", path, descriptor.value);
+    Reflect.defineMetadata("method", "POST", descriptor.value);
+  };
+}
+
+export function Redirect(
+  url: string = "/",
+  statusCode: number = 302
+): MethodDecorator {
+  /**
+   * target类原型 AppController.prototype
+   * propertyKey: 方法名 index
+   * descriptor: index方法的属性描述器
+   */
+
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata("redirectUrl", url, descriptor.value);
+    Reflect.defineMetadata("redirectStatusCode", statusCode, descriptor.value);
+  };
+}
