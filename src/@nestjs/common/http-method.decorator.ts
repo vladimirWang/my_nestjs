@@ -41,3 +41,29 @@ export function Redirect(
     Reflect.defineMetadata("redirectStatusCode", statusCode, descriptor.value);
   };
 }
+export function HttpCode(statusCode: number = 200): MethodDecorator {
+  /**
+   * target类原型 AppController.prototype
+   * propertyKey: 方法名 index
+   * descriptor: index方法的属性描述器
+   */
+
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata("statusCode", statusCode, descriptor.value);
+  };
+}
+
+export function Header(key: string, value: string): MethodDecorator {
+  /**
+   * target类原型 AppController.prototype
+   * propertyKey: 方法名 index
+   * descriptor: index方法的属性描述器
+   */
+
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    const existing = Reflect.getMetadata("headers", descriptor.value) ?? [];
+    existing.push({ key, value });
+
+    Reflect.defineMetadata("headers", existing, descriptor.value);
+  };
+}

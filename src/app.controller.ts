@@ -11,6 +11,8 @@ import {
   Body,
   Response,
   Next,
+  HttpCode,
+  Header,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 
@@ -81,6 +83,13 @@ export class AppController {
     @Body("username") username: string
   ) {
     res.send("ok");
+  }
+  @Post("create3")
+  // @HttpCode(200)
+  @Header("name", "mike")
+  @Header("age", "12")
+  createUser3(@Body("username") username: string) {
+    return `username: ${username}`;
   }
 
   @Get("passthrough")

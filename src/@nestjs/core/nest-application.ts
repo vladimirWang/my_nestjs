@@ -58,6 +58,8 @@ export class NestApplication {
           "redirectStatusCode",
           method
         );
+        const statusCode = Reflect.getMetadata("statusCode", method);
+        const header = Reflect.getMetadata("headers", method) ?? [];
         if (!httpMethod) continue;
 
         const routePath = path.posix.join("/", prefix, pathMetadata);
@@ -80,6 +82,13 @@ export class NestApplication {
               res.redirect(redirectStatusCode || 302, redirectUrl);
               return;
             }
+            if (statusCode) {
+              res.statusCode = statusCode;
+            } else {
+              if (httpMethod === "POST") {
+                res.statusCode = 201;
+              }
+            }
 
             // 判断controller的methodName方法里有没有使用Response或Res参数装饰器，如果用了
             // 任何一个则不发送响应
@@ -89,6 +98,10 @@ export class NestApplication {
             );
             console.log("-----responseMetadata----", responseMetadata);
             if (!responseMetadata || responseMetadata?.data?.passthrough) {
+              header.forEach((item) => {
+                const { key, value } = item;
+                res.setHeader(key, value);
+              });
               res.send(result);
             }
             Logger.log(

@@ -33,12 +33,21 @@ Content-Type: application/json
     "username": "john"
 }
 
-### create
+### create2
 POST {{host}}/create2
 Content-Type: application/json
 
 {
     "username": "john"
+}
+
+
+### create3
+POST {{host}}/create3
+Content-Type: application/json
+
+{
+    "username": "peter"
 }
 
 ### passthrough
