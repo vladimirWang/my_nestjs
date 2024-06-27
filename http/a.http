@@ -1,4 +1,4 @@
-@host=http://localhost:3000
+@host=http://localhost:3040
 
 ### query
 {{host}}/query?id=12
@@ -17,10 +17,6 @@
 
 ### user/1
 {{host}}/zhangsan/info/12
-
-### user/1
-{{host}}/zhangsan/info/12
-
 
 ### star/ab00de
 {{host}}/star/ab00de
@@ -59,6 +55,8 @@ GET {{host}}/next
 ### redirect
 GET {{host}}/redirect
 
-
 ### redirect2
 GET {{host}}/redirect2?version=2
+
+### customParamDecorator
+GET {{host}}/customParamDecorator

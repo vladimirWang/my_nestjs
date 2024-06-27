@@ -14,6 +14,10 @@ export class NestApplication {
   constructor(protected readonly module) {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use((req, res, next) => {
+      req.user = { name: "admin", age: 12 };
+      next();
+    });
   }
 
   private getResponseMetadata(controller: Function, methodName: string) {
@@ -126,7 +130,16 @@ export class NestApplication {
       Reflect.getMetadata(`params`, instance, methodName) ?? [];
     console.log(paramsMetaData, "pam");
     return paramsMetaData.map((paramMetaData) => {
-      const { key, data } = paramMetaData;
+      const { key, data, factory } = paramMetaData;
+      const ctx = {
+        switchToHttp() {
+          return {
+            getRequest: () => req,
+            getResponse: () => res,
+            getNext: () => next,
+          };
+        },
+      };
       switch (key) {
         case "Request":
         case "Req":
@@ -148,6 +161,8 @@ export class NestApplication {
           return data ? req.body[data] : req.body;
         case "Next":
           return next;
+        case "DecoratorFactory":
+          return factory(data, ctx);
         default:
           return null;
       }

@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-export const createParamDecorator = (key: string) => {
+export const createParamDecorator = (keyOrFactory: string | Function) => {
   return (data?: any) => {
     // 这里处理装饰器
     return (target: any, propertyKey: string, parameterIndex: number) => {
@@ -9,7 +9,20 @@ export const createParamDecorator = (key: string) => {
       const existingParameters =
         Reflect.getMetadata(`params`, target, propertyKey) || [];
       // existingParameters.push({ parameterIndex, key });
-      existingParameters[parameterIndex] = { parameterIndex, key, data };
+      if (keyOrFactory instanceof Function) {
+        existingParameters[parameterIndex] = {
+          parameterIndex,
+          key: "DecoratorFactory",
+          factory: keyOrFactory,
+          data,
+        };
+      } else {
+        existingParameters[parameterIndex] = {
+          parameterIndex,
+          key: keyOrFactory,
+          data,
+        };
+      }
       //   existingParameters[parameterIndex] = key;
       Reflect.defineMetadata(`params`, existingParameters, target, propertyKey);
     };

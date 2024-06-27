@@ -15,6 +15,7 @@ import {
   Header,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
+import { User } from "./user.decorator";
 
 @Controller()
 export class AppController {
@@ -114,5 +115,10 @@ export class AppController {
       url: `http://docs.nestjs.com/v${version}`,
       statusCode: 302,
     };
+  }
+
+  @Get("customParamDecorator")
+  customParamDecorator(@User() user: any, @User("age") age: number) {
+    return `${JSON.stringify(user)} \'s age is ${age}`;
   }
 }
