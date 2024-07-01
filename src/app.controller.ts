@@ -13,14 +13,23 @@ import {
   Next,
   HttpCode,
   Header,
+  Inject,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
+import { LoggerSerive, UseValueService } from "./logger.service";
 
+// @Inject()
 @Controller()
 export class AppController {
+  constructor(
+    private loggerSerive: LoggerSerive,
+    @Inject("StringToken") private useValueService: UseValueService
+  ) {}
   @Get()
   index() {
+    this.loggerSerive.log("logger service appcontroller");
+    this.useValueService.log("use value service appcontroller");
     return "hell3o";
   }
 
@@ -39,17 +48,17 @@ export class AppController {
     console.log("accept: ", accept);
     return `accept: ${accept}`;
   }
-  @Get("session")
-  session(@Session() session: any, @Session("pageView") pageView: any) {
-    console.log("session: ", session);
-    console.log("pageView: ", pageView);
-    if (session.pageView) {
-      session.pageView++;
-    } else {
-      session.pageView = 1;
-    }
-    return `pageView: ${session.pageView}`;
-  }
+  // @Get("session")
+  // session(@Session() session: any, @Session("pageView") pageView: any) {
+  //   console.log("session: ", session);
+  //   console.log("pageView: ", pageView);
+  //   if (session.pageView) {
+  //     session.pageView++;
+  //   } else {
+  //     session.pageView = 1;
+  //   }
+  //   return `pageView: ${session.pageView}`;
+  // }
 
   @Get("ip")
   ip(@Ip() ip: string) {

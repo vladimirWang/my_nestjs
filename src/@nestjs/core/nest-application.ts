@@ -6,8 +6,9 @@ import express, {
   Response as ExpressResponse,
   NextFunction,
 } from "express";
-import { Controller } from "../common";
+import { Controller, DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common";
 import path from "path";
+import { LoggerSerive, UseValueService } from "../../logger.service";
 
 export class NestApplication {
   private readonly app: Express = express();
@@ -21,7 +22,8 @@ export class NestApplication {
   }
 
   private getResponseMetadata(controller: Function, methodName: string) {
-    const paramMetadata = Reflect.getMetadata("params", controller, methodName);
+    const paramMetadata =
+      Reflect.getMetadata("params", controller, methodName) ?? [];
     console.log("paramMetadata: ", paramMetadata);
     return paramMetadata
       .filter(Boolean)
@@ -33,6 +35,22 @@ export class NestApplication {
       );
   }
 
+  private resolveDependies(Controller) {
+    const injectedTokens =
+      Reflect.getMetadata(INJECTED_TOKENS, Controller) ?? [];
+    const constructorParams =
+      Reflect.getMetadata(DESIGN_PARAMTYPES, Controller) ?? [];
+    console.log("injectedTokens: ", injectedTokens);
+    console.log("constructorParams: ", constructorParams);
+    return constructorParams.map((param, index) => {
+      if (index === 0) {
+        return new LoggerSerive();
+      } else if (index === 1) {
+        return new UseValueService();
+      }
+    });
+  }
+
   //   初始化工作
   async init() {
     // 取出模块里所有的控制器，然后做好路由配置
@@ -41,8 +59,9 @@ export class NestApplication {
 
     // 路由映射的核心是知道，什么养的请求方法什么的路径对应的哪个处理函数
     for (const Controller of controllers) {
+      const dependencies = this.resolveDependies(Controller);
       // 获取每个控制器实例
-      const controller = new Controller();
+      const controller = new Controller(...dependencies);
       // 获取控制器的前缀
       const prefix = Reflect.getMetadata("prefix", Controller) || "/";
       Logger.log(`${Controller.name} {${prefix}}`, "RoutesResolver");
