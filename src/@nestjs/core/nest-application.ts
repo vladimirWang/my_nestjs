@@ -12,6 +12,7 @@ import { LoggerSerive, UseValueService } from "../../logger.service";
 
 export class NestApplication {
   private readonly app: Express = express();
+  private readonly providers = new Map();
   constructor(protected readonly module) {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -19,6 +20,30 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
+    this.initProviders();
+  }
+  initProviders() {
+    const providers = Reflect.getMetadata("providers", this.module) ?? [];
+    for (const provider of providers) {
+      if (provider.provide && provider.useClass) {
+        const dependencies = this.resolveDependies(provider.useClass);
+        const classInstance = new provider.useClass(...dependencies);
+        this.providers.set(provider.provide, classInstance);
+      } else if (provider.provide && provider.useValue) {
+        this.providers.set(provider.provide, provider.useValue);
+      } else if (provider.provide && provider.useFactory) {
+        const inject = provider.inject ?? [];
+        const injectedValues = inject.map(this.getProviderByToken);
+        this.providers.set(
+          provider.provide,
+          provider.useFactory(...injectedValues)
+        );
+      } else {
+        const dependencies = this.resolveDependies(provider);
+        console.log(dependencies, "---pendencies");
+        this.providers.set(provider, new provider(...dependencies));
+      }
+    }
   }
 
   private getResponseMetadata(controller: Function, methodName: string) {
@@ -35,19 +60,17 @@ export class NestApplication {
       );
   }
 
-  private resolveDependies(Controller) {
-    const injectedTokens =
-      Reflect.getMetadata(INJECTED_TOKENS, Controller) ?? [];
+  private getProviderByToken = (token) => {
+    console.log(token, "---token");
+    return this.providers.get(token) ?? token;
+  };
+
+  private resolveDependies(Clazz) {
+    const injectedTokens = Reflect.getMetadata(INJECTED_TOKENS, Clazz) ?? [];
     const constructorParams =
-      Reflect.getMetadata(DESIGN_PARAMTYPES, Controller) ?? [];
-    console.log("injectedTokens: ", injectedTokens);
-    console.log("constructorParams: ", constructorParams);
+      Reflect.getMetadata(DESIGN_PARAMTYPES, Clazz) ?? [];
     return constructorParams.map((param, index) => {
-      if (index === 0) {
-        return new LoggerSerive();
-      } else if (index === 1) {
-        return new UseValueService();
-      }
+      return this.getProviderByToken(injectedTokens[index] ?? param);
     });
   }
 
@@ -119,7 +142,6 @@ export class NestApplication {
               controller,
               methodName
             );
-            console.log("-----responseMetadata----", responseMetadata);
             if (!responseMetadata || responseMetadata?.data?.passthrough) {
               header.forEach((item) => {
                 const { key, value } = item;
@@ -147,7 +169,6 @@ export class NestApplication {
   ) {
     const paramsMetaData =
       Reflect.getMetadata(`params`, instance, methodName) ?? [];
-    console.log(paramsMetaData, "pam");
     return paramsMetaData.map((paramMetaData) => {
       const { key, data, factory } = paramMetaData;
       const ctx = {
