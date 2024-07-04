@@ -19,7 +19,7 @@ import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
 import {
   LoggerClassSerive,
-  LoggerSerive,
+  LoggerService,
   UseFactory,
   UseValueService,
 } from "./logger.service";
@@ -27,18 +27,18 @@ import {
 // @Inject()
 @Controller()
 export class AppController {
-  constructor(
-    private loggerClassSerive: LoggerClassSerive,
-    private loggerSerive: LoggerSerive,
+  constructor(private loggerClassSerive: LoggerClassSerive) /**
+     * private loggerService: LoggerService,
     @Inject("FactoryToken") private useFactory: UseFactory,
     @Inject("StringToken") private useValueService: UseValueService
-  ) {}
+     */
+  {}
   @Get()
   index() {
     this.loggerClassSerive.log("loggerClassSerive appController");
-    this.loggerSerive.log("logger1 service appcontroller");
-    this.useValueService.log("use2 value service appcontroller");
-    this.useFactory.log("use factory appcontroller");
+    // this.loggerService.log("logger1 service appcontroller");
+    // this.useValueService.log("use2 value service appcontroller");
+    // this.useFactory.log("use factory appcontroller");
     return "hell3o";
   }
 

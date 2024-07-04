@@ -8,7 +8,7 @@ import express, {
 } from "express";
 import { Controller, DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common";
 import path from "path";
-import { LoggerSerive, UseValueService } from "../../logger.service";
+import { LoggerService, UseValueService } from "../../logger.service";
 
 export class NestApplication {
   private readonly app: Express = express();
@@ -22,7 +22,47 @@ export class NestApplication {
     });
     this.initProviders();
   }
-  initProviders() {
+  private initProviders() {
+    const imports = Reflect.getMetadata("imports", this.module) ?? [];
+    for (const importModule of imports) {
+      const importedProviders =
+        Reflect.getMetadata("providers", importModule) ?? [];
+      for (const provider of importedProviders) {
+        this.addProvider(provider);
+      }
+    }
+    const providers = Reflect.getMetadata("providers", this.module) ?? [];
+    for (const provider of providers) {
+      this.addProvider(provider);
+    }
+  }
+  private addProvider(provider) {
+    // 为了避免循环依赖
+    const injectedToken = provider.provide ?? provider;
+    if (this.providers.has(injectedToken)) return;
+    if (provider.provide) {
+      if (provider.useClass) {
+        const dependencies = this.resolveDependies(provider.useClass);
+        const classInstance = new provider.useClass(...dependencies);
+        this.providers.set(provider.provide, classInstance);
+      } else if (provider.useValue) {
+        this.providers.set(provider.provide, provider.useValue);
+      } else if (provider.useFactory) {
+        const inject = provider.inject ?? [];
+        const injectedValues = inject.map(this.getProviderByToken);
+        this.providers.set(
+          provider.provide,
+          provider.useFactory(...injectedValues)
+        );
+      }
+    } else {
+      const dependencies = this.resolveDependies(provider);
+      console.log(dependencies, "---dependencies");
+      this.providers.set(provider, new provider(...dependencies));
+    }
+  }
+  // 模块不相互引用的实现方式
+  initProviders0() {
     const providers = Reflect.getMetadata("providers", this.module) ?? [];
     for (const provider of providers) {
       if (provider.provide && provider.useClass) {
@@ -69,6 +109,8 @@ export class NestApplication {
     const injectedTokens = Reflect.getMetadata(INJECTED_TOKENS, Clazz) ?? [];
     const constructorParams =
       Reflect.getMetadata(DESIGN_PARAMTYPES, Clazz) ?? [];
+    // console.log("--injectedTokens--", injectedTokens);
+    // console.log("--constructorParams--", constructorParams);
     return constructorParams.map((param, index) => {
       return this.getProviderByToken(injectedTokens[index] ?? param);
     });
@@ -83,6 +125,7 @@ export class NestApplication {
     // 路由映射的核心是知道，什么养的请求方法什么的路径对应的哪个处理函数
     for (const Controller of controllers) {
       const dependencies = this.resolveDependies(Controller);
+      console.log(Controller, "----Controller");
       // 获取每个控制器实例
       const controller = new Controller(...dependencies);
       // 获取控制器的前缀

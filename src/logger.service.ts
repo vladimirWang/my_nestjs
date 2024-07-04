@@ -8,12 +8,12 @@ export class LoggerClassSerive {
   }
 }
 @Injectable()
-export class LoggerSerive {
+export class LoggerService {
   constructor(@Inject("SUFFIX") private suffix: string) {
-    console.log("-================LoggerService============: ", this.suffix);
+    // console.log("-================LoggerService============: ", this.suffix);
   }
   log(message) {
-    console.log(`loggerService, `, message);
+    console.log(`loggerService, `, message, this.suffix);
   }
 }
 
@@ -29,10 +29,11 @@ export class UseValueService {
 
 @Injectable()
 export class UseFactory {
-  constructor(private prefix1: string, private prefix2: string) {
-    console.log("UseFactory: ", prefix1, prefix2);
-  }
+  // constructor(private prefix1: string, private prefix2: string) {
+  //   console.log("UseFactory: ", prefix1, prefix2);
+  // }
   log(message) {
-    console.log(`UseFactory, `, message, this.prefix2, this.prefix1);
+    // console.log(`UseFactory, `, message, this.prefix2, this.prefix1);
+    console.log(`UseFactory, `, message);
   }
 }
