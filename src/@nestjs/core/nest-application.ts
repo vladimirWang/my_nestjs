@@ -22,14 +22,42 @@ export class NestApplication {
     });
     this.initProviders();
   }
+
+  private registerProvidersFromModule(module) {
+    // 拿到导入模块的providers进行全量注册
+    // 有可能导入的模块至导出了一部分，并没有全量导出，需要用exports对providers进行过滤
+    const importedProviders = Reflect.getMetadata("providers", module) ?? [];
+    const exports = Reflect.getMetadata("exports", module) ?? [];
+    for (const exportToken of exports) {
+      if (this.isModule(exportToken)) {
+        this.registerProvidersFromModule(exportToken);
+      } else {
+        const provider = importedProviders.find(
+          (provider) =>
+            provider === exportToken || provider.provide === exportToken
+        );
+        if (provider) {
+          this.addProvider(provider);
+        }
+      }
+    }
+    // for (const provider of importedProviders) {
+    //   this.addProvider(provider);
+    // }
+  }
+
+  private isModule(exportToken) {
+    return (
+      exportToken &&
+      exportToken instanceof Function &&
+      Reflect.getMetadata("isModule", exportToken)
+    );
+  }
+
   private initProviders() {
     const imports = Reflect.getMetadata("imports", this.module) ?? [];
     for (const importModule of imports) {
-      const importedProviders =
-        Reflect.getMetadata("providers", importModule) ?? [];
-      for (const provider of importedProviders) {
-        this.addProvider(provider);
-      }
+      this.registerProvidersFromModule(importModule);
     }
     const providers = Reflect.getMetadata("providers", this.module) ?? [];
     for (const provider of providers) {

@@ -7,9 +7,13 @@ import {
   UseFactory,
   LoggerClassSerive,
 } from "./logger.service";
+import { CoreModule } from "./core.module";
 
 @Module({
-  imports: [LoggerModule],
+  imports: [
+    // LoggerModule
+    CoreModule,
+  ],
   controllers: [AppController],
 })
 export class AppModule {}
