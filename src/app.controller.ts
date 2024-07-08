@@ -27,19 +27,20 @@ import { CommonService } from "./common.service";
 // @Inject()
 @Controller()
 export class AppController {
-  constructor(private commonService: CommonService) {}
-  /**
-    * constructor(private loggerClassSerive: LoggerClassSerive)
-     * private loggerService: LoggerService,
+  constructor(
+    private commonService: CommonService,
+    private loggerService: LoggerService,
+    private loggerClassSerive: LoggerClassSerive,
     @Inject("FactoryToken") private useFactory: UseFactory,
     @Inject("StringToken") private useValueService: UseValueService
-     */
+  ) {}
+
   @Get()
   index() {
-    // this.loggerClassSerive.log("loggerClassSerive appController");
-    // this.loggerService.log("logger1 service appcontroller");
-    // this.useValueService.log("use2 value service appcontroller");
-    // this.useFactory.log("use factory appcontroller");
+    this.loggerClassSerive.log("loggerClassSerive appController");
+    this.loggerService.log("logger1 service appcontroller");
+    this.useValueService.log("use2 value service appcontroller");
+    this.useFactory.log("use factory appcontroller");
     return "hell3o";
   }
 

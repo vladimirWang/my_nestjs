@@ -13,20 +13,20 @@ import {
       useValue: "suffix",
     },
     LoggerClassSerive,
-    // {
-    //   provide: LoggerService,
-    //   useClass: LoggerService,
-    // },
-    // {
-    //   provide: "StringToken",
-    //   useValue: new UseValueService("prefix"),
-    // },
-    // {
-    //   provide: "FactoryToken",
-    //   //   inject: ["prefix1", "SUFFIX"],
-    //   //   useFactory: (prefix1, prefix2) => new UseFactory(prefix1, prefix2),
-    //   useFactory: () => new UseFactory(),
-    // },
+    {
+      provide: LoggerService,
+      useClass: LoggerService,
+    },
+    {
+      provide: "StringToken",
+      useValue: new UseValueService("prefix"),
+    },
+    {
+      provide: "FactoryToken",
+      //   inject: ["prefix1", "SUFFIX"],
+      //   useFactory: (prefix1, prefix2) => new UseFactory(prefix1, prefix2),
+      useFactory: () => new UseFactory(),
+    },
   ],
   exports: [
     "SUFFIX",

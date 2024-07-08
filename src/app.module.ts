@@ -10,10 +10,7 @@ import {
 import { CoreModule } from "./core.module";
 
 @Module({
-  imports: [
-    // LoggerModule
-    CoreModule,
-  ],
+  imports: [LoggerModule, CoreModule],
   controllers: [AppController],
 })
 export class AppModule {}

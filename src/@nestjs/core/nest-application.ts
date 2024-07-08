@@ -41,9 +41,6 @@ export class NestApplication {
         }
       }
     }
-    // for (const provider of importedProviders) {
-    //   this.addProvider(provider);
-    // }
   }
 
   private isModule(exportToken) {
@@ -89,30 +86,6 @@ export class NestApplication {
       this.providers.set(provider, new provider(...dependencies));
     }
   }
-  // 模块不相互引用的实现方式
-  initProviders0() {
-    const providers = Reflect.getMetadata("providers", this.module) ?? [];
-    for (const provider of providers) {
-      if (provider.provide && provider.useClass) {
-        const dependencies = this.resolveDependies(provider.useClass);
-        const classInstance = new provider.useClass(...dependencies);
-        this.providers.set(provider.provide, classInstance);
-      } else if (provider.provide && provider.useValue) {
-        this.providers.set(provider.provide, provider.useValue);
-      } else if (provider.provide && provider.useFactory) {
-        const inject = provider.inject ?? [];
-        const injectedValues = inject.map(this.getProviderByToken);
-        this.providers.set(
-          provider.provide,
-          provider.useFactory(...injectedValues)
-        );
-      } else {
-        const dependencies = this.resolveDependies(provider);
-        console.log(dependencies, "---pendencies");
-        this.providers.set(provider, new provider(...dependencies));
-      }
-    }
-  }
 
   private getResponseMetadata(controller: Function, methodName: string) {
     const paramMetadata =
@@ -129,7 +102,6 @@ export class NestApplication {
   }
 
   private getProviderByToken = (token) => {
-    console.log(token, "---token");
     return this.providers.get(token) ?? token;
   };
 
