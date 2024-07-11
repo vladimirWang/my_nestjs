@@ -23,12 +23,13 @@ import {
   UseFactory,
   UseValueService,
 } from "./logger.service";
-import { CommonService } from "./common.service";
+import { OtherService } from "./other.service";
+
 // @Inject()
 @Controller()
 export class AppController {
   constructor(
-    private commonService: CommonService,
+    private ottherService: OtherService,
     private loggerService: LoggerService,
     private loggerClassSerive: LoggerClassSerive,
     @Inject("FactoryToken") private useFactory: UseFactory,
@@ -44,10 +45,10 @@ export class AppController {
     return "hell3o";
   }
 
-  @Get("common")
+  @Get("other")
   common() {
-    this.commonService.log("common");
-    return "common";
+    this.ottherService.log("appcontroller");
+    return "other";
   }
 
   @Get("info")

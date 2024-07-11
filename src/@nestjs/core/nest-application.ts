@@ -12,7 +12,12 @@ import { LoggerService, UseValueService } from "../../logger.service";
 
 export class NestApplication {
   private readonly app: Express = express();
-  private readonly providers = new Map();
+  // 保存所有provider的实例，key是token，值就是类的实例或者值
+  private readonly providerInstances = new Map();
+  // 记录每个模块里有哪些 provider的token
+  private readonly moduleProviders = new Map();
+
+  private readonly globalProviders = new Set();
   constructor(protected readonly module) {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -23,21 +28,27 @@ export class NestApplication {
     this.initProviders();
   }
 
-  private registerProvidersFromModule(module) {
+  private registerProvidersFromModule(module, ...parentModules) {
+    // 获取导入的是否为全局模块
+    const global = Reflect.getMetadata("global", module);
     // 拿到导入模块的providers进行全量注册
     // 有可能导入的模块至导出了一部分，并没有全量导出，需要用exports对providers进行过滤
     const importedProviders = Reflect.getMetadata("providers", module) ?? [];
     const exports = Reflect.getMetadata("exports", module) ?? [];
     for (const exportToken of exports) {
       if (this.isModule(exportToken)) {
-        this.registerProvidersFromModule(exportToken);
+        //  儿子          自己        父亲
+        // exportToken, module, ...parentModules
+        this.registerProvidersFromModule(exportToken, module, ...parentModules);
       } else {
         const provider = importedProviders.find(
           (provider) =>
             provider === exportToken || provider.provide === exportToken
         );
         if (provider) {
-          this.addProvider(provider);
+          [module, ...parentModules].forEach((module) => {
+            this.addProvider(provider, module, global);
+          });
         }
       }
     }
@@ -54,28 +65,44 @@ export class NestApplication {
   private initProviders() {
     const imports = Reflect.getMetadata("imports", this.module) ?? [];
     for (const importModule of imports) {
-      this.registerProvidersFromModule(importModule);
+      this.registerProvidersFromModule(importModule, this.module);
     }
     const providers = Reflect.getMetadata("providers", this.module) ?? [];
     for (const provider of providers) {
-      this.addProvider(provider);
+      this.addProvider(provider, this.module);
     }
   }
-  private addProvider(provider) {
-    // 为了避免循环依赖
+
+  // 原来的provider都放一起，现在分开
+  private addProvider(provider, module, global: boolean = false) {
+    const providers = global
+      ? this.globalProviders
+      : this.moduleProviders.get(module) || new Set();
+    if (!this.moduleProviders.has(module)) {
+      this.moduleProviders.set(module, providers);
+    }
+
+    // 此provider代表module这个模块对应的provider的token
     const injectedToken = provider.provide ?? provider;
-    if (this.providers.has(injectedToken)) return;
+    if (this.providerInstances.has(injectedToken)) {
+      providers.add(injectedToken);
+      return;
+    }
+
     if (provider.provide) {
+      providers.add(provider.provide);
       if (provider.useClass) {
         const dependencies = this.resolveDependies(provider.useClass);
         const classInstance = new provider.useClass(...dependencies);
-        this.providers.set(provider.provide, classInstance);
+        this.providerInstances.set(provider.provide, classInstance);
       } else if (provider.useValue) {
-        this.providers.set(provider.provide, provider.useValue);
+        this.providerInstances.set(provider.provide, provider.useValue);
       } else if (provider.useFactory) {
         const inject = provider.inject ?? [];
-        const injectedValues = inject.map(this.getProviderByToken);
-        this.providers.set(
+        const injectedValues = inject.map((injectToken) =>
+          this.getProviderByToken(injectToken, module)
+        );
+        this.providerInstances.set(
           provider.provide,
           provider.useFactory(...injectedValues)
         );
@@ -83,7 +110,8 @@ export class NestApplication {
     } else {
       const dependencies = this.resolveDependies(provider);
       console.log(dependencies, "---dependencies");
-      this.providers.set(provider, new provider(...dependencies));
+      this.providerInstances.set(provider, new provider(...dependencies));
+      providers.add(provider);
     }
   }
 
@@ -101,8 +129,18 @@ export class NestApplication {
       );
   }
 
-  private getProviderByToken = (token) => {
-    return this.providers.get(token) ?? token;
+  private getProviderByToken = (injectedToken, module) => {
+    // 如何通过token在特定模块下找对应的provider
+    // 先找到此模块对应的set，在判断injectedToken是否在set中
+    // 如果存在则返回实例
+    if (
+      this.moduleProviders.get(module)?.has(injectedToken) ||
+      this.globalProviders.has(injectedToken)
+    ) {
+      return this.providerInstances.get(injectedToken);
+    } else {
+      return null;
+    }
   };
 
   private resolveDependies(Clazz) {
@@ -112,7 +150,8 @@ export class NestApplication {
     // console.log("--injectedTokens--", injectedTokens);
     // console.log("--constructorParams--", constructorParams);
     return constructorParams.map((param, index) => {
-      return this.getProviderByToken(injectedTokens[index] ?? param);
+      const module = Reflect.getMetadata("module", Clazz);
+      return this.getProviderByToken(injectedTokens[index] ?? param, module);
     });
   }
 
