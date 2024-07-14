@@ -78,7 +78,7 @@ export class NestApplication {
     const providers = global
       ? this.globalProviders
       : this.moduleProviders.get(module) || new Set();
-    if (!this.moduleProviders.has(module)) {
+    if (!global && !this.moduleProviders.has(module)) {
       this.moduleProviders.set(module, providers);
     }
 
