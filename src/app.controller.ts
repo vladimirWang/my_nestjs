@@ -24,36 +24,42 @@ import {
   UseValueService,
 } from "./logger.service";
 import { OtherService } from "./other.service";
+import { AppService } from "./app.service";
 
 // @Inject()
 @Controller()
 export class AppController {
-  constructor(
-    private ottherService: OtherService,
-    private loggerService: LoggerService,
-    private loggerClassSerive: LoggerClassSerive,
-    @Inject("FactoryToken") private useFactory: UseFactory,
-    @Inject("StringToken") private useValueService: UseValueService
-  ) {}
+  constructor(private appService: AppService) {}
+  // constructor(
+  //   private ottherService: OtherService,
+  //   private loggerService: LoggerService,
+  //   private loggerClassSerive: LoggerClassSerive,
+  //   @Inject("FactoryToken") private useFactory: UseFactory,
+  //   @Inject("StringToken") private useValueService: UseValueService
+  // ) {}
 
-  @Get()
-  index() {
-    this.loggerClassSerive.log("loggerClassSerive appController");
-    this.loggerService.log("logger1 service appcontroller");
-    this.useValueService.log("use2 value service appcontroller");
-    this.useFactory.log("use factory appcontroller");
-    return "hell3o";
-  }
+  // @Get()
+  // index() {
+  //   this.loggerClassSerive.log("loggerClassSerive appController");
+  //   this.loggerService.log("logger1 service appcontroller");
+  //   this.useValueService.log("use2 value service appcontroller");
+  //   this.useFactory.log("use factory appcontroller");
+  //   return "hell3o";
+  // }
 
-  @Get("other")
-  common() {
-    this.ottherService.log("appcontroller");
-    return "other";
-  }
+  // @Get("other")
+  // common() {
+  //   this.ottherService.log("appcontroller");
+  //   return "other";
+  // }
 
   @Get("info")
   info() {
     return "info";
+  }
+  @Get("config")
+  config() {
+    return this.appService.getConfig();
   }
   @Get("query")
   query(@Query("id") id: any) {

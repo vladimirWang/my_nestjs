@@ -6,7 +6,12 @@ import express, {
   Response as ExpressResponse,
   NextFunction,
 } from "express";
-import { Controller, DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common";
+import {
+  Controller,
+  DESIGN_PARAMTYPES,
+  INJECTED_TOKENS,
+  defineModule,
+} from "../common";
 import path from "path";
 import { LoggerService, UseValueService } from "../../logger.service";
 
@@ -65,7 +70,28 @@ export class NestApplication {
   private initProviders() {
     const imports = Reflect.getMetadata("imports", this.module) ?? [];
     for (const importModule of imports) {
-      this.registerProvidersFromModule(importModule, this.module);
+      if ("module" in importModule) {
+        const {
+          module,
+          providers = [],
+          exports = [],
+          controllers = [],
+        } = importModule;
+        const oldProviders = Reflect.getMetadata("providers", module) ?? [];
+        const newProviders = [...oldProviders, ...providers];
+        defineModule(module, newProviders);
+        const oldControllers = Reflect.getMetadata("controllers", module) ?? [];
+        const newControllers = [...oldControllers, ...controllers];
+        defineModule(module, newControllers);
+        const oldExports = Reflect.getMetadata("exports", module) ?? [];
+        const newExports = [...oldExports, ...exports];
+        Reflect.defineMetadata("providers", newProviders, module);
+        Reflect.defineMetadata("exports", newExports, module);
+        Reflect.defineMetadata("controllers", newControllers, module);
+        this.registerProvidersFromModule(module, this.module);
+      } else {
+        this.registerProvidersFromModule(importModule, this.module);
+      }
     }
     const providers = Reflect.getMetadata("providers", this.module) ?? [];
     for (const provider of providers) {
