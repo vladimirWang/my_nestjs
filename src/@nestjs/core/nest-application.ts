@@ -30,7 +30,6 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
-    this.initProviders();
   }
 
   private registerProvidersFromModule(module, ...parentModules) {
@@ -67,16 +66,20 @@ export class NestApplication {
     );
   }
 
-  private initProviders() {
+  private async initProviders() {
     const imports = Reflect.getMetadata("imports", this.module) ?? [];
     for (const importModule of imports) {
-      if ("module" in importModule) {
+      let importedModule = importModule;
+      if (importModule instanceof Promise) {
+        importedModule = await importModule;
+      }
+      if ("module" in importedModule) {
         const {
           module,
           providers = [],
           exports = [],
           controllers = [],
-        } = importModule;
+        } = importedModule;
         const oldProviders = Reflect.getMetadata("providers", module) ?? [];
         const newProviders = [...oldProviders, ...providers];
         defineModule(module, newProviders);
@@ -90,7 +93,7 @@ export class NestApplication {
         Reflect.defineMetadata("controllers", newControllers, module);
         this.registerProvidersFromModule(module, this.module);
       } else {
-        this.registerProvidersFromModule(importModule, this.module);
+        this.registerProvidersFromModule(importedModule, this.module);
       }
     }
     const providers = Reflect.getMetadata("providers", this.module) ?? [];
@@ -322,6 +325,7 @@ export class NestApplication {
   }
 
   async listen(port: number) {
+    await this.initProviders();
     await this.init();
     // 调用express实例的listen方法
     this.app.listen(port, () => {

@@ -14,7 +14,7 @@ import { AppService } from "./app.service";
 
 @Module({
   // imports: [LoggerModule, CommonModule, OtherModule],
-  imports: [DynamicConfigModule.forRoot()],
+  imports: [DynamicConfigModule.forRoot("hello")],
   controllers: [AppController],
   providers: [AppService],
   exports: [AppService],

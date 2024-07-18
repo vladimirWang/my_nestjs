@@ -13,19 +13,24 @@ export interface Config {
   exports: ["PREFIX"],
 })
 export class DynamicConfigModule {
-  static forRoot(): DynamicModule {
+  static forRoot(msg: string): DynamicModule | Promise<DynamicModule> {
     const providers = [
       {
         provide: "CONFIG",
-        useValue: { apiKey: "123" },
+        useValue: { apiKey: msg },
       },
     ];
-    return {
+    const res = {
       module: DynamicConfigModule,
       providers,
       exports: providers.map((provider) => {
         return provider instanceof Function ? provider : provider.provide;
       }),
     };
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(res);
+      }, 3000);
+    });
   }
 }
