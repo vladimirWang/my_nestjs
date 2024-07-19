@@ -59,7 +59,8 @@ export class AppController {
   }
   @Get("config")
   config() {
-    return this.appService.getConfig();
+    // return this.appService.getConfig();
+    return "hello middleware";
   }
   @Get("query")
   query(@Query("id") id: any) {

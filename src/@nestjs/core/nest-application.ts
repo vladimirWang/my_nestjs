@@ -11,6 +11,7 @@ import {
   DESIGN_PARAMTYPES,
   INJECTED_TOKENS,
   defineModule,
+  RequestMethod,
 } from "../common";
 import path from "path";
 import { LoggerService, UseValueService } from "../../logger.service";
@@ -23,6 +24,8 @@ export class NestApplication {
   private readonly moduleProviders = new Map();
 
   private readonly globalProviders = new Set();
+
+  private readonly middlewares = [];
   constructor(protected readonly module) {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -30,6 +33,54 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
+    this.initMiddlewares();
+  }
+
+  private initMiddlewares() {
+    // 调用配置中间件的方法，MiddlewareConsumer就是当前的NestApplication的实例
+    this.module.prototype.configure?.(this);
+  }
+
+  apply(...middleware) {
+    this.middlewares.push(...middleware);
+    return this;
+  }
+
+  forRoutes(...routes) {
+    for (const route of routes) {
+      for (const middleware of this.middlewares) {
+        const { routePath, routeMehtod } = this.normalizeRouteInfo(route);
+        this.app.use(routePath, (req, res, next) => {
+          // 如果方法名是all或完全匹配，则就可以执行中间件
+          if (routeMehtod === RequestMethod.ALL || routeMehtod === req.method) {
+            const middlewareInstance = this.getMiddlewareInstance(middleware);
+            middlewareInstance.use(req, res, next);
+          } else {
+            next();
+          }
+        });
+      }
+    }
+  }
+
+  private getMiddlewareInstance(middleware) {
+    if (middleware instanceof Function) {
+      return new middleware();
+    }
+    return middleware;
+  }
+
+  private normalizeRouteInfo(route) {
+    let routePath = "",
+      routeMehtod = RequestMethod.ALL;
+    if (typeof route === "string") {
+      routePath = route;
+    } else if ("path" in route) {
+      routePath = route.path;
+      routeMehtod = route.method ?? RequestMethod.ALL;
+    }
+    routePath = path.posix.join("/", routePath);
+    return { routePath, routeMehtod };
   }
 
   private registerProvidersFromModule(module, ...parentModules) {
@@ -147,7 +198,6 @@ export class NestApplication {
   private getResponseMetadata(controller: Function, methodName: string) {
     const paramMetadata =
       Reflect.getMetadata("params", controller, methodName) ?? [];
-    console.log("paramMetadata: ", paramMetadata);
     return paramMetadata
       .filter(Boolean)
       .find(
