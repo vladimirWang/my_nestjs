@@ -33,7 +33,6 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
-    this.initMiddlewares();
   }
 
   private initMiddlewares() {
@@ -42,6 +41,7 @@ export class NestApplication {
   }
 
   apply(...middleware) {
+    defineModule(this.module, middleware);
     this.middlewares.push(...middleware);
     return this;
   }
@@ -64,8 +64,11 @@ export class NestApplication {
   }
 
   private getMiddlewareInstance(middleware) {
+    console.log("-----getMiddlewareInstance-----");
     if (middleware instanceof Function) {
-      return new middleware();
+      const dependencies = this.resolveDependies(middleware);
+      console.log("dep", dependencies);
+      return new middleware(...dependencies);
     }
     return middleware;
   }
@@ -189,7 +192,6 @@ export class NestApplication {
       }
     } else {
       const dependencies = this.resolveDependies(provider);
-      console.log(dependencies, "---dependencies");
       this.providerInstances.set(provider, new provider(...dependencies));
       providers.add(provider);
     }
@@ -243,7 +245,6 @@ export class NestApplication {
     // 路由映射的核心是知道，什么养的请求方法什么的路径对应的哪个处理函数
     for (const Controller of controllers) {
       const dependencies = this.resolveDependies(Controller);
-      console.log(Controller, "----Controller");
       // 获取每个控制器实例
       const controller = new Controller(...dependencies);
       // 获取控制器的前缀
@@ -376,6 +377,7 @@ export class NestApplication {
 
   async listen(port: number) {
     await this.initProviders();
+    await this.initMiddlewares();
     await this.init();
     // 调用express实例的listen方法
     this.app.listen(port, () => {
