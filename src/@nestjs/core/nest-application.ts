@@ -25,7 +25,10 @@ export class NestApplication {
 
   private readonly globalProviders = new Set();
 
+  // 记录所有中间件
   private readonly middlewares = [];
+  // 记录所有要排除的路径
+  private readonly excludeRoutes = [];
   constructor(protected readonly module) {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
@@ -33,6 +36,11 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
+  }
+
+  exclude(...routeInfos) {
+    this.excludeRoutes.push(...routeInfos.map(this.normalizeRouteInfo));
+    return this;
   }
 
   private initMiddlewares() {
@@ -45,12 +53,27 @@ export class NestApplication {
     this.middlewares.push(...middleware);
     return this;
   }
+  isExcluded(reqPath: string, method: RequestMethod): boolean {
+    return (
+      this.excludeRoutes.find((item) => {
+        const { routePath, routeMehtod } = item;
+        return (
+          item.routePath === reqPath &&
+          (routeMehtod === method || routeMehtod === RequestMethod.ALL)
+        );
+      }) !== undefined
+    );
+  }
 
   forRoutes(...routes) {
     for (const route of routes) {
       for (const middleware of this.middlewares) {
         const { routePath, routeMehtod } = this.normalizeRouteInfo(route);
         this.app.use(routePath, (req, res, next) => {
+          if (this.isExcluded(req.originalUrl, req.method)) {
+            console.log("isExcluded: ", req.originalUrl, req.method);
+            return next();
+          }
           // 如果方法名是all或完全匹配，则就可以执行中间件
           if (routeMehtod === RequestMethod.ALL || routeMehtod === req.method) {
             const middlewareInstance = this.getMiddlewareInstance(middleware);
@@ -61,6 +84,7 @@ export class NestApplication {
         });
       }
     }
+    return this;
   }
 
   private getMiddlewareInstance(middleware) {
@@ -81,6 +105,8 @@ export class NestApplication {
     } else if ("path" in route) {
       routePath = route.path;
       routeMehtod = route.method ?? RequestMethod.ALL;
+    } else if (route instanceof Function) {
+      routePath = Reflect.getMetadata("prefix", route);
     }
     routePath = path.posix.join("/", routePath);
     return { routePath, routeMehtod };

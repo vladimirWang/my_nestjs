@@ -27,7 +27,7 @@ import { OtherService } from "./other.service";
 import { AppService } from "./app.service";
 
 // @Inject()
-@Controller()
+@Controller("app")
 export class AppController {
   constructor(private appService: AppService) {}
   // constructor(
@@ -53,6 +53,10 @@ export class AppController {
   //   return "other";
   // }
 
+  @Get("ab*de")
+  abcde() {
+    return "abcde";
+  }
   @Get("info")
   info() {
     return "info";

@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { DynamicConfigModule } from "./dynamicConfig.module";
 import {
@@ -22,6 +27,12 @@ import { LoggerMiddleware } from "./logger.middleware";
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes("config");
+    consumer
+      .apply(LoggerMiddleware)
+      .exclude({
+        path: "app/config",
+        method: RequestMethod.GET,
+      })
+      .forRoutes(AppController);
   }
 }
