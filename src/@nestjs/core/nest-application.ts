@@ -6,15 +6,11 @@ import express, {
   Response as ExpressResponse,
   NextFunction,
 } from "express";
-import {
-  Controller,
-  DESIGN_PARAMTYPES,
-  INJECTED_TOKENS,
-  defineModule,
-  RequestMethod,
-} from "../common";
+import { Controller, RequestMethod } from "@nestjs/common";
 import path from "path";
+import { DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common/const";
 import { LoggerService, UseValueService } from "../../logger.service";
+import { defineModule } from "../common/module.decorator";
 
 export class NestApplication {
   private readonly app: Express = express();
@@ -25,7 +21,7 @@ export class NestApplication {
 
   private readonly globalProviders = new Set();
 
-  // 记录所有中间件
+  // 记录所有中间件, 可能是类，也可能是中间件实例，或函数中间件
   private readonly middlewares = [];
   // 记录所有要排除的路径
   private readonly excludeRoutes = [];
@@ -76,8 +72,12 @@ export class NestApplication {
           }
           // 如果方法名是all或完全匹配，则就可以执行中间件
           if (routeMehtod === RequestMethod.ALL || routeMehtod === req.method) {
-            const middlewareInstance = this.getMiddlewareInstance(middleware);
-            middlewareInstance.use(req, res, next);
+            if ("use" in middleware.prototype || "use" in middleware) {
+              const middlewareInstance = this.getMiddlewareInstance(middleware);
+              middlewareInstance.use(req, res, next);
+            } else if (middleware instanceof Function) {
+              middleware(req, res, next);
+            }
           } else {
             next();
           }

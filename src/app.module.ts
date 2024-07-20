@@ -14,6 +14,7 @@ import {
 } from "./logger.service";
 import { AppService } from "./app.service";
 import { LoggerMiddleware } from "./logger.middleware";
+import { loggerFunction } from "./logger-function.middleware";
 // import { CommonModule } from "./common.module";
 // import { OtherModule } from "./other.module";
 // import { LoggerModule } from "./logger.module";
@@ -25,14 +26,16 @@ import { LoggerMiddleware } from "./logger.middleware";
   providers: [AppService],
   exports: [AppService],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(LoggerMiddleware)
-      .exclude({
-        path: "app/config",
-        method: RequestMethod.GET,
-      })
-      .forRoutes(AppController);
-  }
-}
+export class AppModule {}
+// export class AppModule implements NestModule {
+//   configure(consumer: MiddlewareConsumer) {
+//     // consumer
+//     //   // .apply(LoggerMiddleware)
+//     //   .apply(loggerFunction)
+//     //   .exclude({
+//     //     path: "app/config",
+//     //     method: RequestMethod.GET,
+//     //   })
+//     //   .forRoutes(AppController);
+//   }
+// }

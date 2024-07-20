@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import session from "express-session";
+import { loggerFunction } from "./logger-function.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,7 @@ async function bootstrap() {
       cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 设置cookie最大存活时间
     })
   );
+  // app.use(loggerFunction);
   await app.listen(3000);
 }
 
