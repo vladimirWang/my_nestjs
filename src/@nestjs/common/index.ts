@@ -9,3 +9,8 @@ export * from "./request.method.enum";
 export * from "./middleware.interface";
 export * from "./middleware-consumer.interface";
 export * from "./nest-module.interface";
+export * from "./http-status.enum";
+export * from "./http-exeption";
+export * from "./exception-filter.interface";
+export * from "./arguments-host.interface";
+export * from "./http-exception.filter";

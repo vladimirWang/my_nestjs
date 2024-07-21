@@ -21,10 +21,10 @@ import { loggerFunction } from "./logger-function.middleware";
 
 @Module({
   // imports: [LoggerModule, CommonModule, OtherModule],
-  imports: [DynamicConfigModule.forRoot("hello")],
+  // imports: [DynamicConfigModule.forRoot("hello")],
   controllers: [AppController],
-  providers: [AppService],
-  exports: [AppService],
+  // providers: [AppService],
+  // exports: [AppService],
 })
 export class AppModule {}
 // export class AppModule implements NestModule {

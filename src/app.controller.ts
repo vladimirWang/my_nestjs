@@ -14,6 +14,8 @@ import {
   HttpCode,
   Header,
   Inject,
+  HttpException,
+  HttpStatus,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
@@ -29,7 +31,7 @@ import { AppService } from "./app.service";
 // @Inject()
 @Controller("app")
 export class AppController {
-  constructor(private appService: AppService) {}
+  // constructor(private appService: AppService) {}
   // constructor(
   //   private ottherService: OtherService,
   //   private loggerService: LoggerService,
@@ -52,6 +54,21 @@ export class AppController {
   //   this.ottherService.log("appcontroller");
   //   return "other";
   // }
+  @Get("exception")
+  exception() {
+    // 当异常是未识别的（既不是HttpException，也不是继承自HttpException的类）
+    // {"statusCode": 500, "message": "Internal server error"}
+    // throw new Error("未识别");
+    // throw new HttpException("Forbiden", HttpStatus.FORBIDDEN);
+    throw new HttpException(
+      {
+        errorCode: "E00001",
+        status: HttpStatus.FORBIDDEN,
+        error: "这是一个自定义的错误消息",
+      },
+      HttpStatus.FORBIDDEN
+    );
+  }
 
   @Get("ab*de")
   abcde() {
