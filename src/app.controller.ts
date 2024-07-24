@@ -17,6 +17,8 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  UseFilters,
+  RequestTimeoutException,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
@@ -29,9 +31,10 @@ import {
 import { OtherService } from "./other.service";
 import { AppService } from "./app.service";
 import { ForbiddenException } from "./forbidden.exception";
+import { CustomExceptionFilter } from "./custom-exception.filter";
 
 // @Inject()
-@Controller("app")
+@Controller()
 export class AppController {
   // constructor(private appService: AppService) {}
   // constructor(
@@ -80,12 +83,14 @@ export class AppController {
     throw new ForbiddenException();
   }
   @Get("bad-request")
+  @UseFilters(CustomExceptionFilter)
   badRequest() {
     // 当异常是未识别的（既不是HttpException，也不是继承自HttpException的类）
     // {"statusCode": 500, "message": "Internal server error"}
     // throw new Error("未识别");
     // throw new HttpException("Forbiden", HttpStatus.FORBIDDEN);
     throw new BadRequestException("something bad happened", "some error occur");
+    // throw new RequestTimeoutException("timeout", "timeout2");
   }
 
   @Get("ab*de")

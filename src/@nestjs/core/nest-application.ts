@@ -32,9 +32,12 @@ export class NestApplication {
   // 记录所有要排除的路径
   private readonly excludeRoutes = [];
 
-  // 全局异常过滤器
+  // 默认全局异常过滤器
   private readonly defaultGlobalHttpExceptionFilter =
     new GlobalHttpExceptionFilter();
+
+  // 用户配置的全局异常过滤器
+  private readonly globalHttpExceptionFilters = [];
 
   // 一个全局异常过滤器
   constructor(protected readonly module) {
@@ -44,6 +47,10 @@ export class NestApplication {
       req.user = { name: "admin", age: 12 };
       next();
     });
+  }
+
+  useGlobalFilters(...filters) {
+    this.globalHttpExceptionFilters.push(...filters);
   }
 
   exclude(...routeInfos) {
@@ -292,6 +299,10 @@ export class NestApplication {
       // 等同于Controller.prototype
       const controllerPrototype = Reflect.getPrototypeOf(controller);
 
+      // 获取控制上绑定的异常过滤器
+      const controllerFilters =
+        Reflect.getMetadata("filters", Controller) ?? [];
+
       for (const methodName of Object.getOwnPropertyNames(
         controllerPrototype
       )) {
@@ -307,6 +318,9 @@ export class NestApplication {
         const statusCode = Reflect.getMetadata("statusCode", method);
         const header = Reflect.getMetadata("headers", method) ?? [];
         if (!httpMethod) continue;
+
+        // 获取控制上绑定的异常过滤器
+        const methodFilters = Reflect.getMetadata("filters", method) ?? [];
 
         const routePath = path.posix.join("/", prefix, pathMetadata);
         this.app[httpMethod.toLowerCase()](
@@ -369,7 +383,10 @@ export class NestApplication {
                 "RoutesResolver"
               );
             } catch (error) {
-              await this.callExceptionFilters(error, host);
+              await this.callExceptionFilters(error, host, [
+                ...methodFilters,
+                ...controllerFilters,
+              ]);
             }
           }
         );
@@ -378,10 +395,39 @@ export class NestApplication {
     }
   }
 
-  private callExceptionFilters(error, host) {
-    const filters = [this.defaultGlobalHttpExceptionFilter];
-    for (const filter of filters) {
-      filter.catch(error, host);
+  getFilterInstance(filter) {
+    if (filter instanceof Function) {
+      const dependencies = this.resolveDependies(filter);
+      return new filter(...dependencies);
+    }
+    return filter;
+  }
+
+  private callExceptionFilters(error, host, filters) {
+    const allFilters = [
+      ...filters,
+      ...this.globalHttpExceptionFilters,
+      this.defaultGlobalHttpExceptionFilter,
+    ];
+    for (const filter of allFilters) {
+      let filterInstance = this.getFilterInstance(filter);
+      if (filterInstance instanceof Function) {
+        filterInstance = new filterInstance();
+      }
+      const exceptions =
+        Reflect.getMetadata("catch", filterInstance.constructor) ?? [];
+
+      /**
+       * 1 是httpException的实例，返回自定义的错误
+       * 2 否则展示Internal Server Error
+       */
+      if (
+        exceptions.length === 0 ||
+        exceptions.some((exception) => error instanceof exception)
+      ) {
+        filterInstance.catch(error, host);
+        break;
+      }
     }
   }
 
