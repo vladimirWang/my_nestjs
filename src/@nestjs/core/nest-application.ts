@@ -153,6 +153,7 @@ export class NestApplication {
         }
       }
     }
+    this.initController(module);
   }
 
   private isModule(exportToken) {
@@ -280,9 +281,9 @@ export class NestApplication {
   }
 
   //   初始化工作
-  async init() {
+  async initController(module) {
     // 取出模块里所有的控制器，然后做好路由配置
-    const controllers = Reflect.getMetadata("controllers", this.module) || [];
+    const controllers = Reflect.getMetadata("controllers", module) || [];
     Logger.log(`AppModule dependencies initialized`, "InstanceLoader");
 
     // 路由映射的核心是知道，什么养的请求方法什么的路径对应的哪个处理函数
@@ -302,7 +303,7 @@ export class NestApplication {
         Reflect.getMetadata("filters", Controller) ?? [];
 
       defineModule(
-        this.module,
+        module,
         controllerFilters.filter((filter) => filter instanceof Function)
       );
 
@@ -326,7 +327,7 @@ export class NestApplication {
         const methodFilters = Reflect.getMetadata("filters", method) ?? [];
 
         defineModule(
-          this.module,
+          module,
           methodFilters.filter((filter) => filter instanceof Function)
         );
 
@@ -501,7 +502,7 @@ export class NestApplication {
     await this.initProviders();
     await this.initMiddlewares();
     await this.initGlobalFilters();
-    await this.init();
+    await this.initController(this.module);
     // 调用express实例的listen方法
     this.app.listen(port, () => {
       Logger.log(
