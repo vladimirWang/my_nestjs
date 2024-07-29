@@ -18,6 +18,10 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
   catch(exeption: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response: any = ctx.getResponse();
+    // 如果此响应已经发送给客户端了，就不用处理了
+    if (response.headersSent) {
+      return;
+    }
     if (exeption instanceof HttpException) {
       const msg = exeption.getResponse();
       const status = exeption.getStatus();
@@ -32,6 +36,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     } else {
       return response.status(500).json({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: exeption.message,
         message: "Internal server error",
       });
     }
