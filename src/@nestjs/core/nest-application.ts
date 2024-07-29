@@ -6,17 +6,13 @@ import express, {
   Response as ExpressResponse,
   NextFunction,
 } from "express";
-import {
-  ArgumentsHost,
-  Controller,
-  GlobalHttpExceptionFilter,
-  RequestMethod,
-  defineModule,
-  DESIGN_PARAMTYPES,
-  INJECTED_TOKENS,
-} from "@nestjs/common";
+import { ArgumentsHost, Controller, RequestMethod } from "@nestjs/common";
 import path from "path";
 import { LoggerService, UseValueService } from "../../logger.service";
+import { APP_FILTER } from "./constants";
+import { DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common/constants";
+import { defineModule } from "../common/module.decorator";
+import { GlobalHttpExceptionFilter } from "../common/http-exception.filter";
 
 export class NestApplication {
   private readonly app: Express = express();
@@ -50,6 +46,10 @@ export class NestApplication {
   }
 
   useGlobalFilters(...filters) {
+    defineModule(
+      this.module,
+      filters.filter((filter) => filter instanceof Function)
+    );
     this.globalHttpExceptionFilters.push(...filters);
   }
 
@@ -86,7 +86,6 @@ export class NestApplication {
         const { routePath, routeMehtod } = this.normalizeRouteInfo(route);
         this.app.use(routePath, (req, res, next) => {
           if (this.isExcluded(req.originalUrl, req.method)) {
-            console.log("isExcluded: ", req.originalUrl, req.method);
             return next();
           }
           // 如果方法名是all或完全匹配，则就可以执行中间件
@@ -103,14 +102,13 @@ export class NestApplication {
         });
       }
     }
+    this.middlewares.length = 0;
     return this;
   }
 
   private getMiddlewareInstance(middleware) {
-    console.log("-----getMiddlewareInstance-----");
     if (middleware instanceof Function) {
       const dependencies = this.resolveDependies(middleware);
-      console.log("dep", dependencies);
       return new middleware(...dependencies);
     }
     return middleware;
@@ -206,7 +204,7 @@ export class NestApplication {
     const providers = global
       ? this.globalProviders
       : this.moduleProviders.get(module) || new Set();
-    if (!global && !this.moduleProviders.has(module)) {
+    if (!global) {
       this.moduleProviders.set(module, providers);
     }
 
@@ -303,6 +301,11 @@ export class NestApplication {
       const controllerFilters =
         Reflect.getMetadata("filters", Controller) ?? [];
 
+      defineModule(
+        this.module,
+        controllerFilters.filter((filter) => filter instanceof Function)
+      );
+
       for (const methodName of Object.getOwnPropertyNames(
         controllerPrototype
       )) {
@@ -322,6 +325,11 @@ export class NestApplication {
         // 获取控制上绑定的异常过滤器
         const methodFilters = Reflect.getMetadata("filters", method) ?? [];
 
+        defineModule(
+          this.module,
+          methodFilters.filter((filter) => filter instanceof Function)
+        );
+
         const routePath = path.posix.join("/", prefix, pathMetadata);
         this.app[httpMethod.toLowerCase()](
           routePath,
@@ -330,7 +338,7 @@ export class NestApplication {
             res: ExpressResponse,
             next: NextFunction
           ) => {
-            const host: ArgumentsHost = {
+            const host = {
               switchToHttp() {
                 return {
                   getRequest: () => req,
@@ -476,9 +484,23 @@ export class NestApplication {
     this.app.use(middleware);
   }
 
+  async initGlobalFilters() {
+    const providers = Reflect.getMetadata("providers", this.module) ?? [];
+    for (const provider of providers) {
+      if (provider.provide === APP_FILTER) {
+        const provideInstance = this.getProviderByToken(
+          APP_FILTER,
+          this.module
+        );
+        this.useGlobalFilters(provideInstance);
+      }
+    }
+  }
+
   async listen(port: number) {
     await this.initProviders();
     await this.initMiddlewares();
+    await this.initGlobalFilters();
     await this.init();
     // 调用express实例的listen方法
     this.app.listen(port, () => {

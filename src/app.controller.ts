@@ -34,9 +34,9 @@ import { ForbiddenException } from "./forbidden.exception";
 import { CustomExceptionFilter } from "./custom-exception.filter";
 
 // @Inject()
-@Controller()
+@Controller("app")
 export class AppController {
-  // constructor(private appService: AppService) {}
+  constructor(private appService: AppService) {}
   // constructor(
   //   private ottherService: OtherService,
   //   private loggerService: LoggerService,
@@ -45,20 +45,16 @@ export class AppController {
   //   @Inject("StringToken") private useValueService: UseValueService
   // ) {}
 
-  // @Get()
-  // index() {
-  //   this.loggerClassSerive.log("loggerClassSerive appController");
-  //   this.loggerService.log("logger1 service appcontroller");
-  //   this.useValueService.log("use2 value service appcontroller");
-  //   this.useFactory.log("use factory appcontroller");
-  //   return "hell3o";
-  // }
+  @Get()
+  index() {
+    return "app";
+  }
 
-  // @Get("other")
-  // common() {
-  //   this.ottherService.log("appcontroller");
-  //   return "other";
-  // }
+  @Get("other")
+  common() {
+    console.log("other");
+    return this.appService.getConfig();
+  }
   @Get("exception")
   exception() {
     // 当异常是未识别的（既不是HttpException，也不是继承自HttpException的类）
@@ -82,14 +78,14 @@ export class AppController {
     // throw new HttpException("Forbiden", HttpStatus.FORBIDDEN);
     throw new ForbiddenException();
   }
-  @Get("bad-request")
-  @UseFilters(CustomExceptionFilter)
+  @Get("badrequest")
+  @UseFilters(new CustomExceptionFilter())
   badRequest() {
     // 当异常是未识别的（既不是HttpException，也不是继承自HttpException的类）
     // {"statusCode": 500, "message": "Internal server error"}
-    // throw new Error("未识别");
+    throw new Error("未识别");
     // throw new HttpException("Forbiden", HttpStatus.FORBIDDEN);
-    throw new BadRequestException("something bad happened", "some error occur");
+    // throw new BadRequestException("something bad happened", "some error occur");
     // throw new RequestTimeoutException("timeout", "timeout2");
   }
 

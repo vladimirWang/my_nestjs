@@ -3,12 +3,16 @@ import {
   ExceptionFilter,
   Catch,
   BadRequestException,
+  RequestTimeoutException,
+  Inject,
 } from "@nestjs/common";
 import { Response, Request } from "express";
 
 @Catch(BadRequestException)
 export class CustomExceptionFilter implements ExceptionFilter {
+  // constructor(@Inject("PREFIX") private readonly prefix) {}
   catch(exeption: any, host: ArgumentsHost) {
+    // console.log(this.prefix, "---prefix");
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
