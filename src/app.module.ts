@@ -43,14 +43,14 @@ function logger2(req, res, next) {
   ],
   // exports: [AppService],
 })
-// export class AppModule {}
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      // .apply(LoggerMiddleware)
-      .apply(logger1)
-      .forRoutes(AppController)
-      .apply(logger2)
-      .forRoutes(App2Controller);
-  }
-}
+export class AppModule {}
+// export class AppModule implements NestModule {
+//   configure(consumer: MiddlewareConsumer) {
+//     consumer
+//       // .apply(LoggerMiddleware)
+//       .apply(logger1)
+//       .forRoutes(AppController)
+//       .apply(logger2)
+//       .forRoutes(App2Controller);
+//   }
+// }

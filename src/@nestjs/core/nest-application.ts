@@ -451,34 +451,58 @@ export class NestApplication {
     const paramsMetaData =
       Reflect.getMetadata(`params`, instance, methodName) ?? [];
     return paramsMetaData.map((paramMetaData) => {
-      const { key, data, factory } = paramMetaData;
+      const { key, data, factory, pipes } = paramMetaData;
+      let value;
       switch (key) {
         case "Request":
         case "Req":
-          return req;
+          value = req;
+          break;
         case "Response":
         case "Res":
-          return res;
+          value = res;
+          break;
         case "Query":
-          return data ? req.query[data] : req.query;
+          value = data ? req.query[data] : req.query;
+          break;
         case "Headers":
-          return data ? req.headers[data] : req.headers;
+          value = data ? req.headers[data] : req.headers;
+          break;
         case "Session":
-          return data ? req.session[data] : req.session;
+          value = data ? req.session[data] : req.session;
+          break;
         case "Ip":
-          return req.ip;
+          value = req.ip;
+          break;
         case "Param":
-          return data ? req.params[data] : req.params;
+          value = data ? req.params[data] : req.params;
+          break;
         case "Body":
-          return data ? req.body[data] : req.body;
+          value = data ? req.body[data] : req.body;
+          break;
         case "Next":
-          return next;
+          value = next;
+          break;
         case "DecoratorFactory":
-          return factory(data, host);
+          value = factory(data, host);
+          break;
         default:
-          return null;
+          value = null;
       }
+      for (const pipe of [...pipes]) {
+        const pipeInstance = this.getPipeInstance(pipe);
+        value = pipeInstance.transform(value);
+      }
+      return value;
     });
+  }
+
+  getPipeInstance(pipe) {
+    if (typeof pipe === "function") {
+      const dependencies = this.resolveDependies(pipe);
+      return new pipe(...dependencies);
+    }
+    return pipe;
   }
 
   use(middleware) {

@@ -18,7 +18,7 @@ export class HttpException extends Error {
 }
 
 export class BadRequestException extends HttpException {
-  constructor(message, error) {
+  constructor(message, error?) {
     super(
       { message, error, statusCode: HttpStatus.BAD_REQUEST },
       HttpStatus.BAD_REQUEST
@@ -27,7 +27,7 @@ export class BadRequestException extends HttpException {
 }
 
 export class ForbiddenException extends HttpException {
-  constructor(message, error) {
+  constructor(message, error?) {
     super(
       { message, error, statusCode: HttpStatus.FORBIDDEN },
       HttpStatus.FORBIDDEN
@@ -35,7 +35,7 @@ export class ForbiddenException extends HttpException {
   }
 }
 export class BadGatewayException extends HttpException {
-  constructor(message, error) {
+  constructor(message, error?) {
     super(
       { message, error, statusCode: HttpStatus.BAD_GATEWAY },
       HttpStatus.BAD_GATEWAY
@@ -43,7 +43,7 @@ export class BadGatewayException extends HttpException {
   }
 }
 export class RequestTimeoutException extends HttpException {
-  constructor(message, error) {
+  constructor(message, error?) {
     super(
       { message, error, statusCode: HttpStatus.REQUEST_TIMEOUT },
       HttpStatus.REQUEST_TIMEOUT

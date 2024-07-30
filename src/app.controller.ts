@@ -32,6 +32,7 @@ import { OtherService } from "./other.service";
 import { AppService } from "./app.service";
 import { ForbiddenException } from "./forbidden.exception";
 import { CustomExceptionFilter } from "./custom-exception.filter";
+import { ParseIntPipe } from "@nestjs/common";
 
 // @Inject()
 @Controller("app")
@@ -45,9 +46,10 @@ export class AppController {
   //   @Inject("StringToken") private useValueService: UseValueService
   // ) {}
 
-  @Get()
-  index() {
-    return "app";
+  @Get("number/:id")
+  index(@Param("id", ParseIntPipe) id: number) {
+    console.log(typeof id, "; ", id, "---typeof id");
+    return "app: " + id;
   }
 
   @Get("other")
