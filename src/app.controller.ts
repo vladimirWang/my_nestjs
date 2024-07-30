@@ -19,6 +19,12 @@ import {
   BadRequestException,
   UseFilters,
   RequestTimeoutException,
+  ParseBoolPipe,
+  ParseArrayPipe,
+  ParseUUIDPipe,
+  ParseIntPipe,
+  ParseEnumPipe,
+  DefaultValuePipe,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
@@ -32,7 +38,11 @@ import { OtherService } from "./other.service";
 import { AppService } from "./app.service";
 import { ForbiddenException } from "./forbidden.exception";
 import { CustomExceptionFilter } from "./custom-exception.filter";
-import { ParseIntPipe } from "@nestjs/common";
+
+enum Roles {
+  Admin = "Admin",
+  Vip = "Vip",
+}
 
 // @Inject()
 @Controller("app")
@@ -45,6 +55,68 @@ export class AppController {
   //   @Inject("FactoryToken") private useFactory: UseFactory,
   //   @Inject("StringToken") private useValueService: UseValueService
   // ) {}
+
+  @Get("default")
+  getUsername(
+    @Query("username", new DefaultValuePipe("guest")) username: string[]
+  ) {
+    return "username: " + username;
+  }
+
+  @Get("admin/:role")
+  getRole(@Param("role", new ParseEnumPipe(Roles)) role: string[]) {
+    console.log(
+      Object.prototype.toString.call(role),
+      "; ",
+      role,
+      "---typeof id"
+    );
+    return "app: " + role;
+  }
+
+  // 测试用的uuid
+  // 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+  @Get("uuid/:value")
+  getUuid(@Param("value", ParseUUIDPipe) value: string[]) {
+    console.log(
+      Object.prototype.toString.call(value),
+      "; ",
+      value,
+      "---typeof id"
+    );
+    return "app: " + value;
+  }
+
+  @Get("array/:value")
+  getArray(@Param("value", ParseArrayPipe) value: string[]) {
+    console.log(
+      Object.prototype.toString.call(value),
+      "; ",
+      value,
+      "---typeof id"
+    );
+    return "app: " + value;
+  }
+
+  @Get("array2/:value")
+  getArray2(
+    @Param("value", new ParseArrayPipe({ items: String, separator: "@" }))
+    value: string[]
+  ) {
+    console.log(
+      Object.prototype.toString.call(value),
+      "; ",
+      value,
+      "---typeof id"
+    );
+    return "app: " + value;
+  }
+
+  @Get("bool/:value")
+  getBool(@Param("value", ParseBoolPipe) value: string) {
+    console.log(typeof value, "; ", value, "---typeof id");
+    return "app: " + value;
+  }
 
   @Get("number/:id")
   index(@Param("id", ParseIntPipe) id: number) {
