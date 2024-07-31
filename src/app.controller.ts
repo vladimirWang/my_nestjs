@@ -25,6 +25,7 @@ import {
   ParseIntPipe,
   ParseEnumPipe,
   DefaultValuePipe,
+  UsePipes,
 } from "@nestjs/common";
 import { Response as ExpressResponse } from "express";
 import { User } from "./user.decorator";
@@ -39,6 +40,8 @@ import { AppService } from "./app.service";
 import { ForbiddenException } from "./forbidden.exception";
 import { CustomExceptionFilter } from "./custom-exception.filter";
 import { CustomPipe } from "./custom.pipe";
+import { ZodValidationPipe } from "./zod-validation.pipe";
+import { createCatSchema, CreateCatDto } from "./create-cat.dto";
 
 enum Roles {
   Admin = "Admin",
@@ -47,6 +50,7 @@ enum Roles {
 
 // @Inject()
 @Controller("app")
+@UsePipes(new ZodValidationPipe(createCatSchema))
 export class AppController {
   constructor(private appService: AppService) {}
   // constructor(
@@ -56,6 +60,13 @@ export class AppController {
   //   @Inject("FactoryToken") private useFactory: UseFactory,
   //   @Inject("StringToken") private useValueService: UseValueService
   // ) {}
+
+  @Post("zod-validation")
+  @UsePipes(new ZodValidationPipe(createCatSchema))
+  zodValidationPipe(@Body() createCatDto: CreateCatDto) {
+    console.log("createCatDto: ", createCatDto);
+    return "this action add a new cat";
+  }
 
   @Get("custom-pipe/:value")
   getCustomPipe(@Param("value", CustomPipe) value: any, age: number) {

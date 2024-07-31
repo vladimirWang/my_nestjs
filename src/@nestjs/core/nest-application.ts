@@ -6,7 +6,12 @@ import express, {
   Response as ExpressResponse,
   NextFunction,
 } from "express";
-import { ArgumentsHost, Controller, RequestMethod } from "@nestjs/common";
+import {
+  ArgumentsHost,
+  Controller,
+  PipeTransform,
+  RequestMethod,
+} from "@nestjs/common";
 import path from "path";
 import { LoggerService, UseValueService } from "../../logger.service";
 import { APP_FILTER, DECORATOR_FACTORY } from "./constants";
@@ -302,6 +307,8 @@ export class NestApplication {
       const controllerFilters =
         Reflect.getMetadata("filters", Controller) ?? [];
 
+      // 获取控制器上绑定的管道数组
+      const controllerPipes = Reflect.getMetadata("pipes", Controller) ?? [];
       defineModule(
         module,
         controllerFilters.filter((filter) => filter instanceof Function)
@@ -325,6 +332,9 @@ export class NestApplication {
 
         // 获取控制上绑定的异常过滤器
         const methodFilters = Reflect.getMetadata("filters", method) ?? [];
+        // 获取控制上绑定的异常过滤器
+        const methodPipes = Reflect.getMetadata("pipes", method) ?? [];
+        const pipes = [...controllerPipes, ...methodPipes];
 
         defineModule(
           module,
@@ -355,7 +365,8 @@ export class NestApplication {
                 req,
                 res,
                 next,
-                host
+                host,
+                pipes
               );
               const result = method.call(controller, ...args);
               if (result?.url) {
@@ -446,12 +457,13 @@ export class NestApplication {
     req: ExpressRequest,
     res: ExpressResponse,
     next: NextFunction,
-    host
+    host,
+    pipes: PipeTransform[]
   ) {
     const paramsMetaData =
       Reflect.getMetadata(`params`, instance, methodName) ?? [];
     return paramsMetaData.map((paramMetaData) => {
-      const { key, data, factory, pipes } = paramMetaData;
+      const { key, data, factory, pipes: paramPipes } = paramMetaData;
       let value;
       switch (key) {
         case "Request":
@@ -489,7 +501,8 @@ export class NestApplication {
         default:
           value = null;
       }
-      for (const pipe of [...pipes]) {
+      console.log("[...pipes, ...paramPipes]", [...pipes, ...paramPipes]);
+      for (const pipe of [...pipes, ...paramPipes]) {
         const pipeInstance = this.getPipeInstance(pipe);
         const type = key === DECORATOR_FACTORY ? "custom" : key.toLowerCase();
         value = pipeInstance.transform(value, { type, data });
