@@ -38,6 +38,7 @@ import { OtherService } from "./other.service";
 import { AppService } from "./app.service";
 import { ForbiddenException } from "./forbidden.exception";
 import { CustomExceptionFilter } from "./custom-exception.filter";
+import { CustomPipe } from "./custom.pipe";
 
 enum Roles {
   Admin = "Admin",
@@ -55,6 +56,11 @@ export class AppController {
   //   @Inject("FactoryToken") private useFactory: UseFactory,
   //   @Inject("StringToken") private useValueService: UseValueService
   // ) {}
+
+  @Get("custom-pipe/:value")
+  getCustomPipe(@Param("value", CustomPipe) value: any, age: number) {
+    return "custom-pipe value: " + value;
+  }
 
   @Get("default")
   getUsername(

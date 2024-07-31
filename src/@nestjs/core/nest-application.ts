@@ -9,7 +9,7 @@ import express, {
 import { ArgumentsHost, Controller, RequestMethod } from "@nestjs/common";
 import path from "path";
 import { LoggerService, UseValueService } from "../../logger.service";
-import { APP_FILTER } from "./constants";
+import { APP_FILTER, DECORATOR_FACTORY } from "./constants";
 import { DESIGN_PARAMTYPES, INJECTED_TOKENS } from "../common/constants";
 import { defineModule } from "../common/module.decorator";
 import { GlobalHttpExceptionFilter } from "../common/http-exception.filter";
@@ -483,7 +483,7 @@ export class NestApplication {
         case "Next":
           value = next;
           break;
-        case "DecoratorFactory":
+        case DECORATOR_FACTORY:
           value = factory(data, host);
           break;
         default:
@@ -491,7 +491,8 @@ export class NestApplication {
       }
       for (const pipe of [...pipes]) {
         const pipeInstance = this.getPipeInstance(pipe);
-        value = pipeInstance.transform(value);
+        const type = key === DECORATOR_FACTORY ? "custom" : key.toLowerCase();
+        value = pipeInstance.transform(value, { type, data });
       }
       return value;
     });
